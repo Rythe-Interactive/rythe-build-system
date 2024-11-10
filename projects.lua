@@ -116,7 +116,7 @@ local function findAssembly(assemblyId)
     return project, projectId, projectType
 end
 
-local function kindName(projectType, config)
+local function kindName(projectType)
     if projectType == "module" then
         return ctx.linkTarget()
     elseif projectType == "test" then
@@ -338,41 +338,79 @@ function projects.load(projectPath)
     return loadProject(projectId, project, projectPath, name, projectType)
 end
 
-local function appendConfigSuffix(linkTargets, config)
-    local suffix = rythe.targetSuffix(config)
+local function appendTargetSuffixes(linkTargets, config, variant)
+    local targetSuffix = rythe.targetSuffix(config)
+    local variantSuffix = rythe.targetVariantSuffix(variant)
     local copy = {}
     for i, target in ipairs(linkTargets) do
-        copy[i] = target .. suffix
+        copy[i] = target .. variantSuffix .. targetSuffix
     end
 
     return copy
 end
 
-local function setupRelease(projectType, linkTargets)
-    filter("configurations:Release")
-        defines { "NDEBUG" }
-        optimize("Full")
-        kind(kindName(projectType, rythe.Configuration.RELEASE))
-        links(appendConfigSuffix(linkTargets, rythe.Configuration.RELEASE))
+local function getConfigFilter(config)
+    local configFilters = { 
+        [rythe.configuration.RELEASE] = "configurations:Release*",
+        [rythe.configuration.DEVELOPMENT] = "configurations:Development*",
+        [rythe.configuration.DEBUG] = "configurations:Debug*"
+    }
+
+    return configFilters[config]
 end
 
-local function setupDevelopment(projectType, linkTargets)
-    filter("configurations:Development")
+local function setupRelease()
+    filter(getConfigFilter(rythe.configuration.RELEASE))
+        defines { "NDEBUG" }
+        optimize("Full")
+end
+
+local function setupDevelopment()
+    filter(getConfigFilter(rythe.configuration.DEVELOPMENT))
         defines { "DEBUG" }
         optimize("Debug")
         inlining("Explicit")
         symbols("On")
-        kind(kindName(projectType, rythe.Configuration.DEVELOPMENT))
-        links(appendConfigSuffix(linkTargets, rythe.Configuration.DEVELOPMENT))
 end
 
-local function setupDebug(projectType, linkTargets)
-    filter("configurations:Debug")
+local function setupDebug()
+    filter(getConfigFilter(rythe.configuration.DEBUG))
         defines { "DEBUG" }
         optimize("Debug")
         symbols("On")
-        kind(kindName(projectType, rythe.Configuration.DEBUG))
-        links(appendConfigSuffix(linkTargets, rythe.Configuration.DEBUG))
+end
+
+local function setupDefault(config, linkTargets)
+    filter { "configurations:not *-asan", "configurations:not *-profiling", getConfigFilter(config) }
+        defines { "RYTHE_VALIDATION_LEVEL=" .. rythe.configurationValidationLevels[config][rythe.configurationVariants.DEFAULT]  }
+        links(appendTargetSuffixes(linkTargets, config, rythe.configurationVariants.DEFAULT))
+        targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.DEFAULT) .. rythe.targetSuffix(config))
+        toolset(buildSettings.toolsets[config][rythe.configurationVariants.DEFAULT])
+end
+
+local function setupAsan(config, linkTargets)
+    filter("configurations:*-asan")
+        sanitize("Address")
+        flags("NoIncrementalLink")
+        editandcontinue("Off")
+        defines { "_DISABLE_VECTOR_ANNOTATION", "_DISABLE_STRING_ANNOTATION" }
+
+    filter { "configurations:*-asan", getConfigFilter(config) }
+        defines { "RYTHE_VALIDATION_LEVEL=" .. rythe.configurationValidationLevels[config][rythe.configurationVariants.ASAN]  }
+        links(appendTargetSuffixes(linkTargets, config, rythe.configurationVariants.ASAN))
+        targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.ASAN) .. rythe.targetSuffix(config))
+        toolset(buildSettings.toolsets[config][rythe.configurationVariants.ASAN])
+end
+
+local function setupProfiling(config, linkTargets)
+    filter("configurations:*-profiling")
+        defines {"RYTHE_PROFILING_ENABLED"}
+        
+    filter { "configurations:*-profiling", getConfigFilter(config) }
+        defines { "RYTHE_VALIDATION_LEVEL=" .. rythe.configurationValidationLevels[config][rythe.configurationVariants.PROFILING]  }
+        links(appendTargetSuffixes(linkTargets, config, rythe.configurationVariants.PROFILING))
+        targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.PROFILING) .. rythe.targetSuffix(config))
+        toolset(buildSettings.toolsets[config][rythe.configurationVariants.PROFILING])
 end
 
 local function getDepsRecursive(project, projectType)
@@ -492,9 +530,15 @@ end
 
 function projects.submit(proj)
     local configSetup = { 
-        [rythe.Configuration.RELEASE] = setupRelease,
-        [rythe.Configuration.DEVELOPMENT] = setupDevelopment,
-        [rythe.Configuration.DEBUG] = setupDebug        
+        [rythe.configuration.RELEASE] = setupRelease,
+        [rythe.configuration.DEVELOPMENT] = setupDevelopment,
+        [rythe.configuration.DEBUG] = setupDebug        
+    }
+
+    local variantSetup = {
+        [rythe.configurationVariants.DEFAULT] = setupDefault,
+        [rythe.configurationVariants.ASAN] = setupAsan,
+        [rythe.configurationVariants.PROFILING] = setupProfiling      
     }
 
     for i, projectType in ipairs(proj.types) do
@@ -562,7 +606,7 @@ function projects.submit(proj)
                 dependson(depNames)
             end
             
-            architecture(buildSettings.platform)
+            architecture(buildSettings.architecture)
             
             local targetDir = binDir .. proj.group .. "/" .. proj.name
             targetdir(targetDir)
@@ -587,7 +631,6 @@ function projects.submit(proj)
 
                 defines(allDefines)
                 
-                toolset(buildSettings.toolset)
                 language("C++")
                 cppdialect(buildSettings.cppVersion)
                 warnings(proj.warning_level)
@@ -656,11 +699,13 @@ function projects.submit(proj)
                 removefiles(excludePatterns)
             end
 
-            if projectType == "util" then
-                kind("Utility")
-            else
-                for i, config in pairs(rythe.Configuration) do
-                    configSetup[config](projectType, linkTargets)
+            kind(kindName(projectType))
+            if projectType ~= "util" then
+                for i, config in pairs(rythe.configuration) do
+                    configSetup[config]()
+                    for j, variant in pairs(rythe.configurationVariants) do
+                        variantSetup[variant](config, linkTargets)
+                    end
                 end
             end
         filter("")

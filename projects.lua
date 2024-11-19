@@ -35,6 +35,8 @@ local projects = {}
 --  pre_build                           | nil                           | Prebuild command
 --  post_build                          | nil                           | Postbuild command
 --  pre_link                            | nil                           | Prelink command
+--  multi_core_compilation              | true                          | Allow project to be compiled in parallel
+--  link_time_optimization              | true                          | Enable LTO
 
 
 local function folderToProjectType(projectFolder)
@@ -242,6 +244,14 @@ local function loadProject(projectId, project, projectPath, name, projectType)
 
     if project.warnings_as_errors == nil then
         project.warnings_as_errors = true
+    end
+
+    if project.multi_core_compilation == nil then
+        project.multi_core_compilation = true
+    end
+
+    if project.link_time_optimization == nil then
+        project.link_time_optimization = true
     end
 
     if project.floating_point_config == nil then
@@ -648,6 +658,14 @@ function projects.submit(proj)
 
                 if proj.warnings_as_errors then
                     compileFlags[#compileFlags + 1] = "FatalWarnings"
+                end
+
+                if proj.multi_core_compilation then
+                    compileFlags[#compileFlags + 1] = "MultiProcessorCompile"
+                end
+
+                if proj.link_time_optimization then
+                    compileFlags[#compileFlags + 1] = "LinkTimeOptimization"
                 end
 
                 flags(compileFlags)

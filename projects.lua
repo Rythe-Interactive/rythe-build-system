@@ -37,7 +37,8 @@ local projects = {}
 --  pre_link                            | nil                           | Prelink command
 --  multi_core_compilation              | true                          | Allow project to be compiled in parallel
 --  link_time_optimization              | true                          | Enable LTO
-
+--  pch_enabled                         | false                         | Enable precompiled headers
+--  pch_file_name                       | "pch"                         | File name for pch header and pch source files (e.g. pch.hpp and pch.cpp will have the name: "pch")
 
 local function folderToProjectType(projectFolder)
     if projectFolder == "applications" then
@@ -256,6 +257,18 @@ local function loadProject(projectId, project, projectPath, name, projectType)
 
     if project.floating_point_config == nil then
         project.floating_point_config = "Default"
+    end
+
+    if project.pch_enabled == nil then
+        project.pch_enabled = false
+    end
+
+    if project.pch_file_name == nil then
+        if project.pch_enabled then
+            project.pch_file_name = "pch"
+        end
+    else
+        project.pch_enabled = true
     end
 
     if utils.tableIsEmpty(project.defines) then
@@ -601,7 +614,7 @@ function projects.submit(proj)
 
                         depNames[#depNames + 1] = depProject.alias .. projectNameSuffix(depType)
                         
-                        allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.alias) .. "=1" or string.upper(string.gsub(depProject.group, "[/\\]", "_")) .. "_" .. string.upper(depProject.alias) .. "=1"
+                        allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.alias) .. "=1" or string.upper(depProject.group:gsub("[/\\]", "_")) .. "_" .. string.upper(depProject.alias:gsub("%-","_")) .. "=1"
 
                         libDirs[#libDirs + 1] = binDir .. depProject.group .. "/" .. depProject.name
                         
@@ -700,6 +713,50 @@ function projects.submit(proj)
             end
 
             filePatterns[#filePatterns + 1] = proj.src
+
+            if proj.pch_enabled and isProjectTypeMainType(projectType) then
+                local pchHeader, pchSource, pchParentDir
+
+                local lastDirIndex = string.match(proj.pch_file_name, "^.*()/")
+                if string.find(proj.pch_file_name, "^(%.[/\\])") == nil then
+                    if lastDirIndex == nil then
+                        pchParentDir = projectSrcDir
+                        local fullPchPath = projectSrcDir .. proj.pch_file_name
+                        pchHeader = fullPchPath .. ".hpp"
+                        pchSource = fullPchPath .. ".cpp"
+                    else
+                        pchParentDir = string.sub(proj.pch_file_name, 1, lastDirIndex)
+                        pchHeader = proj.pch_file_name .. ".hpp"
+                        pchSource = proj.pch_file_name .. ".cpp"
+                    end
+                else
+                    local fullPchPath = projectSrcDir .. string.sub(proj.pch_file_name, 3)
+                    pchParentDir = projectSrcDir .. string.sub(proj.pch_file_name, 3, lastDirIndex)
+                    pchHeader = fullPchPath .. ".hpp"
+                    pchSource = fullPchPath .. ".cpp"
+                end
+
+                filePatterns[#filePatterns + 1] = pchHeader
+                filePatterns[#filePatterns + 1] = pchSource
+                
+                if not os.isdir(pchParentDir) then
+                    os.mkdir(pchParentDir)
+                end
+
+                if not os.isfile(pchHeader) then
+                    io.writefile(pchHeader, "#pragma once\n\n")
+                    print("Created: " .. pchHeader)
+                end
+
+                if not os.isfile(pchSource) then
+                    io.writefile(pchSource, "#include \"" .. string.sub(pchHeader, string.match(pchHeader, "^.*()/") + 1) .. "\"\n\n")
+                    print("Created: " .. pchSource)
+                end
+
+                includedirs({pchParentDir})
+                pchheader(pchHeader)
+                pchsource(pchSource)
+            end
 
             vpaths({ ["*"] = { projectSrcDir, fs.parentPath(proj.src) }})
             files(filePatterns)

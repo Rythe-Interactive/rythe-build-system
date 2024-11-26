@@ -744,7 +744,7 @@ function projects.submit(proj)
                 end
 
                 if not os.isfile(pchHeader) then
-                    io.writefile(pchHeader, "#pragma once\n\n")
+                    io.writefile(pchHeader, "#pragma once\n#define RYTHE_PCH\n\n")
                     print("Created: " .. pchHeader)
                 end
 
@@ -754,8 +754,8 @@ function projects.submit(proj)
                 end
 
                 includedirs({pchParentDir})
-                pchheader(pchHeader)
-                pchsource(pchSource)
+                pchheader(os.getcwd() .. "/" .. pchHeader)
+                pchsource(os.getcwd() .. "/" .. pchSource)
             end
 
             vpaths({ ["*"] = { projectSrcDir, fs.parentPath(proj.src) }})

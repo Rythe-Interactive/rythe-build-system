@@ -748,13 +748,16 @@ function projects.submit(proj)
                     print("Created: " .. pchHeader)
                 end
 
+                local pchHeaderFileName = path.getname(pchHeader)
+
                 if not os.isfile(pchSource) then
-                    io.writefile(pchSource, "#include \"" .. string.sub(pchHeader, string.match(pchHeader, "^.*()/") + 1) .. "\"\n\n")
+                    io.writefile(pchSource, "#include \"" .. pchHeaderFileName .. "\"\n\n")
                     print("Created: " .. pchSource)
                 end
 
                 includedirs({pchParentDir})
-                pchheader(os.getcwd() .. "/" .. pchHeader)
+                pchheader(pchHeaderFileName)
+                forceincludes({pchHeaderFileName})
                 pchsource(os.getcwd() .. "/" .. pchSource)
             end
 

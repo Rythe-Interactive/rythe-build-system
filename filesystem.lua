@@ -1,5 +1,7 @@
 local fs = {}
 
+local utils = dofile("utils.lua")
+
 function fs.exists(file)
     local ok, err, code = os.rename(file, file)
     if not ok then
@@ -33,6 +35,21 @@ end
 
 function fs.rootName(path)
     return string.match(path, "^([^/\\]+)")
+end
+
+function fs.resolvePaths(paths, root)
+    local correctedRoot = (utils.stringEndsWith(root, "/") and root) or (utils.stringEndsWith(root, "\\") and root) or (root .. "/")
+    local resolved = {}
+
+    for i, pattern in ipairs(paths) do
+        if string.find(pattern, "^(%.[/\\])") == nil then
+            resolved[#resolved + 1] = pattern
+        else
+            resolved[#resolved + 1] = correctedRoot .. string.sub(pattern, 3)
+        end
+    end
+
+    return resolved
 end
 
 return fs

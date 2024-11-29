@@ -67,6 +67,9 @@ local function find(projectPath)
     end
 
     local projectFile = projectPath .. "/.rythe_project"
+    if not fs.exists(projectFile) then
+        projectFile = nil
+    end
 
     local thirdPartyFile = projectPath .. "/.rythe_third_party"
     if not fs.exists(thirdPartyFile) then
@@ -216,7 +219,7 @@ local function printTable(name, table, indent)
     indent = indent:sub(-1)
 end
 
-local function loadProject(projectId, project, projectPath, name, projectType)
+local function loadProject(projectId, project, name, projectType)
     if project.alias == nil then
         project.alias = name
     end
@@ -279,8 +282,6 @@ local function loadProject(projectId, project, projectPath, name, projectType)
         project.defines[#project.defines +1 ] = "PROJECT_NAMESPACE=" .. project.namespace
     end
 
-    project.location = projectPath
-
     if project.files == nil then -- files can be an empty table if no files need to be loaded
         project.files = { "./**" }
     end
@@ -290,18 +291,18 @@ local function loadProject(projectId, project, projectPath, name, projectType)
     return project
 end
 
-function projects.load(projectPath)
-    
-    local projectFile, thirdPartyFile, group, name, projectType = find(projectPath)
+function projects.load(project)
+    local projectFile, thirdPartyFile, group, name, projectType = find(project.location)
     local projectId = getProjectId(group, name)
-            
+    
     if loadedProjects[projectId] ~= nil then
         return loadedProjects[projectId]
     end
 
-    if projectFile == nil then
-        print("Could not find project \"" .. group .. "/" .. name .. "\"")
-        return nil
+    if projectFile ~= nil then
+        local projectPath = project.location
+        project = dofile(projectFile)
+        project.location = projectPath
     end
 
     if thirdPartyFile ~= nil then
@@ -336,11 +337,9 @@ function projects.load(projectPath)
                 thirdParty.location = projectPath .. "/third_party/" .. thirdParty.name
             end
 
-            thirdParty = loadProject(thirdPartyId, thirdParty, thirdParty.location, thirdParty.name, thirdPartyType)
+            thirdParty = loadProject(thirdPartyId, thirdParty, thirdParty.name, thirdPartyType)
         end
     end
-
-    local project = dofile(projectFile)
 
     project.group = group
     project.name = name
@@ -349,16 +348,11 @@ function projects.load(projectPath)
         project = project:init(ctx)
     end
 
-    if project == nil then
-        print("Could not initialize project \"" .. group .. "/" .. name .. "\"")
-        return nil
-    end
-
     if not utils.tableIsEmpty(project.types) then
         projectType = project.types[1]
     end
 
-    return loadProject(projectId, project, projectPath, name, projectType)
+    return loadProject(projectId, project, name, projectType)
 end
 
 local function appendTargetSuffixes(linkTargets, config, variant)
@@ -517,7 +511,9 @@ local function getDepsRecursive(project, projectType)
                     depType = "library"
                 end
 
-                depProject = loadProject(depId, thirdPartyProject, path, thirdPartyProject.name, depType)
+                thirdPartyProject.location = path
+
+                depProject = loadProject(depId, thirdPartyProject, thirdPartyProject.name, depType)
             end
         end
 
@@ -634,7 +630,7 @@ function projects.submit(proj)
             local targetDir = binDir .. proj.group .. "/" .. proj.name
             targetdir(targetDir)
             objdir(binDir .. "obj")
-            
+
             if projectType ~= "util" then
                 if not utils.tableIsEmpty(externalIncludeDirs) then
                     externalincludedirs(externalIncludeDirs)
@@ -645,11 +641,11 @@ function projects.submit(proj)
                 end
 
                 if not utils.tableIsEmpty(proj.additional_include_dirs) then
-                    includedirs(proj.additional_include_dirs)
+                    includedirs(fs.resolvePaths(proj.additional_include_dirs, proj.location))
                 end
 
                 if not utils.tableIsEmpty(proj.additional_external_include_dirs) then
-                    externalincludedirs(proj.additional_external_include_dirs)
+                    externalincludedirs(fs.resolvePaths(proj.additional_external_include_dirs, proj.location))
                 end
 
                 defines(allDefines)
@@ -688,8 +684,6 @@ function projects.submit(proj)
                 end
             end
 
-            local filePatterns = {}
-
             if projectType == "application" then
                 filter { "system:windows" }
 				    files { proj.location .. "/**resources.rc", proj.location .. "/**.ico" }
@@ -698,21 +692,13 @@ function projects.submit(proj)
 
             local projectSrcDir = projectTypeFilesDir(proj.location, projectType, proj.namespace)
 
-            for i, pattern in ipairs(proj.files) do
-                if string.find(pattern, "^(%.[/\\])") == nil then
-                    filePatterns[#filePatterns + 1] = pattern
-                else
-                    filePatterns[#filePatterns + 1] = projectSrcDir .. string.sub(pattern, 3)
-                end
-            end
+            local filePatterns = fs.resolvePaths(proj.files, projectSrcDir)
 
             if projectType == "test" then
                 filePatterns[#filePatterns + 1] = _WORKING_DIR .. "/utils/test utils/**"
 
                 vpaths({ ["test utils"] = _WORKING_DIR .. "/utils/test utils/**" })
             end
-
-            filePatterns[#filePatterns + 1] = proj.src
 
             if proj.pch_enabled and isProjectTypeMainType(projectType) then
                 local pchHeader, pchSource, pchParentDir
@@ -761,20 +747,18 @@ function projects.submit(proj)
                 pchsource(os.getcwd() .. "/" .. pchSource)
             end
 
-            vpaths({ ["*"] = { projectSrcDir, fs.parentPath(proj.src) }})
+            local vPaths = { projectSrcDir }
+
+            if proj.src ~= nil then
+                filePatterns[#filePatterns + 1] = proj.src
+                vPaths[#vPaths + 1] = fs.parentPath(proj.src)
+            end
+
+            vpaths({ ["*"] = vPaths})
             files(filePatterns)
 
             if not utils.tableIsEmpty(proj.exclude_files) then
-                local excludePatterns = {}
-                for i, pattern in ipairs(proj.exclude_files) do
-                    if string.find(pattern, "^(%.[/\\])") == nil then
-                        excludePatterns[#excludePatterns + 1] = pattern
-                    else
-                        excludePatterns[#excludePatterns + 1] = projectSrcDir .. string.sub(pattern, 3)
-                    end
-                end
-
-                removefiles(excludePatterns)
+                removefiles(fs.resolvePaths(proj.exclude_files, projectSrcDir))
             end
 
             kind(kindName(projectType))
@@ -792,6 +776,16 @@ function projects.submit(proj)
     group("")
 end
 
+function projects.addBuiltInProjects()
+    local catch2 = {
+        location = "libraries/third_party/catch2",
+        defines = { "CATCH_AMALGAMATED_CUSTOM_MAIN" },
+        additional_external_include_dirs = { "./src" }
+    }
+
+    projects.load(catch2)
+end
+
 function projects.scan(path)
     local srcDirs = {}
 
@@ -800,14 +794,18 @@ function projects.scan(path)
     end
 
     for i, dir in ipairs(srcDirs) do
-        local project = projects.load(dir)
+        local project = projects.load({ location = dir})
     end
+end
 
+function projects.resolveAllDeps()
     local sourceProjects = utils.copyTable(loadedProjects)
     for projectId, project in pairs(sourceProjects) do
         projects.resolveDeps(project)
     end
+end
 
+function projects.sumbitAll()
     for projectId, project in pairs(loadedProjects) do
         projects.submit(project)
     end

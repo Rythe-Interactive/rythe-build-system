@@ -89,7 +89,10 @@ function rythe.targetVariantSuffix(variant)
 end
 
 function rythe.configure()
+    projects.addBuiltInProjects()
     projects.scan("./")
+    projects.resolveAllDeps()
+    projects.sumbitAll()
 end
 
 return rythe

@@ -88,7 +88,15 @@ function rythe.targetVariantSuffix(variant)
     return variantSuffix[variant]
 end
 
-function rythe.configure()
+function rythe.configure(workspaces)
+    for i, wspc in ipairs(workspaces) do
+        workspace(wspc.name)
+            location(wspc.location)
+            configurations(wspc.configurations)
+        
+        os.copyfile(_WORKING_DIR .. "/.runsettings", _WORKING_DIR .. "/" .. wspc.location .. "/.runsettings")
+    end
+
     projects.addBuiltInProjects()
     projects.scan("./")
     projects.resolveAllDeps()

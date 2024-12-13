@@ -334,7 +334,7 @@ function projects.load(project)
             end
 
             if thirdParty.location == nil then
-                thirdParty.location = projectPath .. "/third_party/" .. thirdParty.name
+                thirdParty.location = project.location .. "/third_party/" .. thirdParty.name
             end
 
             thirdParty = loadProject(thirdPartyId, thirdParty, thirdParty.name, thirdPartyType)

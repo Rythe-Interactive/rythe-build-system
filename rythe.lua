@@ -15,6 +15,21 @@ premake.rythe = {
     buildSettings = {
         architecture = "x86_64",
         cppVersion = "C++20"
+    },
+    configNames = { 
+        [rythe.configuration.RELEASE] = "Release",
+        [rythe.configuration.DEVELOPMENT] = "Development",
+        [rythe.configuration.DEBUG] = "Debug",
+    },
+    configSuffix = { 
+        [rythe.configuration.RELEASE] = "",
+        [rythe.configuration.DEVELOPMENT] = "-dev",
+        [rythe.configuration.DEBUG] = "-debug"        
+    },
+    variantSuffix = { 
+        [rythe.configurationVariants.DEFAULT] = "",
+        [rythe.configurationVariants.ASAN] = "-asan",
+        [rythe.configurationVariants.PROFILING] = "-profiling"        
     }
 }
 
@@ -59,33 +74,15 @@ function rythe.overrideToolset(config, variant, toolset)
 end
 
 function rythe.configName(config)
-    local configNames = { 
-        [rythe.configuration.RELEASE] = "Release",
-        [rythe.configuration.DEVELOPMENT] = "Development",
-        [rythe.configuration.DEBUG] = "Debug",
-    }
-
-    return configNames[config]
+    return rythe.configNames[config]
 end
 
 function rythe.targetSuffix(config)
-    local configSuffix = { 
-        [rythe.configuration.RELEASE] = "",
-        [rythe.configuration.DEVELOPMENT] = "-dev",
-        [rythe.configuration.DEBUG] = "-debug"        
-    }
-
-    return configSuffix[config]
+    return rythe.configSuffix[config]
 end
 
 function rythe.targetVariantSuffix(variant)
-    local variantSuffix = { 
-        [rythe.configurationVariants.DEFAULT] = "",
-        [rythe.configurationVariants.ASAN] = "-asan",
-        [rythe.configurationVariants.PROFILING] = "-profiling"        
-    }
-
-    return variantSuffix[variant]
+    return rythe.variantSuffix[variant]
 end
 
 function rythe.configure(workspaces)

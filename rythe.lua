@@ -15,22 +15,25 @@ premake.rythe = {
     buildSettings = {
         architecture = "x86_64",
         cppVersion = "C++20"
-    },
-    configNames = { 
-        [rythe.configuration.RELEASE] = "Release",
-        [rythe.configuration.DEVELOPMENT] = "Development",
-        [rythe.configuration.DEBUG] = "Debug",
-    },
-    configSuffix = { 
-        [rythe.configuration.RELEASE] = "",
-        [rythe.configuration.DEVELOPMENT] = "-dev",
-        [rythe.configuration.DEBUG] = "-debug"        
-    },
-    variantSuffix = { 
-        [rythe.configurationVariants.DEFAULT] = "",
-        [rythe.configurationVariants.ASAN] = "-asan",
-        [rythe.configurationVariants.PROFILING] = "-profiling"        
     }
+}
+
+premake.rythe.configNames = { 
+    [premake.rythe.configuration.RELEASE] = "Release",
+    [premake.rythe.configuration.DEVELOPMENT] = "Development",
+    [premake.rythe.configuration.DEBUG] = "Debug",
+}
+
+premake.rythe.configSuffix = { 
+    [premake.rythe.configuration.RELEASE] = "",
+    [premake.rythe.configuration.DEVELOPMENT] = "-dev",
+    [premake.rythe.configuration.DEBUG] = "-debug"        
+}
+
+premake.rythe.variantSuffix = { 
+    [premake.rythe.configurationVariants.DEFAULT] = "",
+    [premake.rythe.configurationVariants.ASAN] = "-asan",
+    [premake.rythe.configurationVariants.PROFILING] = "-profiling"        
 }
 
 premake.rythe.buildSettings.toolsets = {

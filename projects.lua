@@ -27,6 +27,7 @@ local projects = {}
 --  exclude_warnings                    | nil                           | List of warnings to explicitly disable, for Visual Studio this needs to be the warning number instead of the name
 --  floating_point_config               | "Default"                     | Floating point configuration for the compiler to use, valid values: "Default", "Fast", "Strict", "None"
 --  vector_extensions                   | nil                           | Which vector extension to enable, see: https://premake.github.io/docs/vectorextensions/
+--  isa_extensions                      | nil                           | see: https://premake.github.io/docs/isaextensions/
 --  defines                             | [empty]                       | Additional defines on top of the default ones Rythe will add (PROJECT_NAME, PROJECT_FULL_NAME, PROJECT_NAMESPACE)
 --  files                               | ["./**"]                      | File filter patterns to find source files with
 --  exclude_files                       | nil                           | Exclude patterns to exclude source files with
@@ -666,7 +667,7 @@ function projects.submit(proj)
                 local compileFlags = { }
 
                 if proj.warnings_as_errors then
-                    compileFlags[#compileFlags + 1] = "FatalWarnings"
+                    fatalwarnings("All")
                 end
 
                 if proj.multi_core_compilation then
@@ -674,14 +675,20 @@ function projects.submit(proj)
                 end
 
                 if proj.link_time_optimization then
-                    compileFlags[#compileFlags + 1] = "LinkTimeOptimization"
+                    linktimeoptimization("On")
                 end
-
+                
                 flags(compileFlags)
 
                 if proj.vector_extensions ~= nil then
                     vectorextensions(proj.vector_extensions)
                 end
+
+                if proj.isa_extensions ~= nil then
+                    isaextensions(proj.isa_extensions)
+                end
+
+                intrinsics("On")
             end
 
             if projectType == "application" then

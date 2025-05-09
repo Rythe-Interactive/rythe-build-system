@@ -50,7 +50,7 @@ premake.rythe.configurationValidationLevels = {
 
 local rythe = premake.rythe
 
-local projects = dofile("projects.lua")
+rythe.projects = dofile("projects.lua")
 
 function rythe.architecture(architecture)
     rythe.buildSettings.architecture = architecture
@@ -88,7 +88,7 @@ function rythe.targetVariantSuffix(variant)
     return rythe.variantSuffix[variant]
 end
 
-function rythe.configure(workspaces)
+function rythe.setup(workspaces)
     for i, wspc in ipairs(workspaces) do
         workspace(wspc.name)
             location(wspc.location)
@@ -96,7 +96,10 @@ function rythe.configure(workspaces)
         
         os.copyfile(_WORKING_DIR .. "/.runsettings", _WORKING_DIR .. "/" .. wspc.location .. "/.runsettings")
     end
+end
 
+function rythe.configure(workspaces)
+    setup(workspaces)
     projects.addBuiltInProjects()
     projects.scan("./")
     projects.resolveAllDeps()

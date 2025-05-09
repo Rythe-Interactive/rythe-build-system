@@ -41,6 +41,27 @@ local projects = {}
 --  pch_enabled                         | false                         | Enable precompiled headers
 --  pch_file_name                       | "pch"                         | File name for pch header and pch source files (e.g. pch.hpp and pch.cpp will have the name: "pch")
 
+local function printTable(name, table, indent, recurse)
+    print(indent .. name .. ":")
+    indent = indent .. "\t"
+    for key, value in pairs(table) do
+        if type(value) == "table" then
+            if recurse ~= nil and recurse then
+                printTable(key, value, indent)
+            else
+                print(indent .. key .. ": " .. "table")
+            end
+        elseif type(value) == "function" then
+            print(indent .. key .. ": " .. "function")
+        elseif type(value) == "boolean" then
+            print(indent .. key .. ": " .. (value and "true" or "false"))
+        else
+            print(indent .. key .. ": " .. value)
+        end
+    end
+    indent = indent:sub(-1)
+end
+
 local function folderToProjectType(projectFolder)
     if projectFolder == "applications" then
         return "application"
@@ -55,14 +76,53 @@ local function folderToProjectType(projectFolder)
     return projectFolder
 end
 
+local function isValidProjectType(projectType)
+    if projectType == "util" then
+        return true
+    elseif projectType == "application" then
+        return true
+    elseif projectType == "module" then
+        return true
+    elseif projectType == "editor" then
+        return true
+    elseif projectType == "library" or projectType == "header-only" then
+        return true
+    elseif projectType == "test" then
+        return true
+    end
+
+    return false
+end
+
+local function findProjectRoot(projectPath)
+    local rootName = fs.rootName(projectPath)
+    local projectType = folderToProjectType(rootName)
+
+    local rootNameLength = string.len(rootName) + 2
+    local remainingPath = string.sub(projectPath, rootNameLength)
+
+    while (isValidProjectType(projectType) ~= true) do
+        rootName = fs.rootName(remainingPath)
+        rootNameLength = string.len(rootName) + 2
+        projectType = folderToProjectType(rootName)
+        remainingPath = string.sub(remainingPath, rootNameLength)
+    end
+
+
+
+    local rootPath = string.sub(projectPath, 0, string.len(projectPath) - string.len(remainingPath))
+
+    return rootPath, projectType
+end
+
 local function find(projectPath)
     local projectName = fs.fileName(projectPath)
-    local projectType = fs.rootName(projectPath)
+    local rootPath, projectType = findProjectRoot(projectPath)
     local group = fs.parentPath(projectPath)
 
-    local projectTypeLength = string.len(projectType) + 2
-    if string.len(group) > projectTypeLength then
-        group = string.sub(group, projectTypeLength)
+    local rootPathLength = string.len(rootPath) + 1
+    if group ~= nil and string.len(group) > rootPathLength then
+        group = string.sub(group, rootPathLength)
     else
         group = ""
     end
@@ -77,7 +137,7 @@ local function find(projectPath)
         thirdPartyFile = nil
     end
 
-    return projectFile, thirdPartyFile, group, projectName, folderToProjectType(projectType)
+    return projectFile, thirdPartyFile, group, projectName, projectType
 end
 
 local function getProjectId(group, projectName)
@@ -114,6 +174,8 @@ local function findAssembly(assemblyId)
 
     if projectType == "" then        
         if project == nil then
+            print(assemblyId)
+            printTable("loadedProjects", loadedProjects, "")
             return nil, projectId, nil
         else
             return project, projectId, project.types[1]
@@ -203,21 +265,6 @@ local function isProjectTypeMainType(projectType)
     end
 
     return true
-end
-
-local function printTable(name, table, indent)
-    print(indent .. name .. ":")
-    indent = indent .. "\t"
-    for key, value in pairs(table) do
-        if type(value) == "table" then
-            printTable(key, value, indent)
-        elseif type(value) == "function" then
-            print(indent .. key .. ": " .. "function")
-        else
-            print(indent .. key .. ": " .. value)
-        end
-    end
-    indent = indent:sub(-1)
 end
 
 local function loadProject(projectId, project, name, projectType)
@@ -619,7 +666,7 @@ function projects.submit(proj)
                             linkTargets[#linkTargets + 1] = depProject.alias .. projectNameSuffix(depType)
                         end
                     else
-                        print("\tDependency \"" .. depId .. "\" was not found")
+                        print("\tDependency \"" .. assemblyId .. "\" was not found")
                     end
                 end
                 
@@ -702,9 +749,9 @@ function projects.submit(proj)
             local filePatterns = fs.resolvePaths(proj.files, projectSrcDir)
 
             if projectType == "test" then
-                filePatterns[#filePatterns + 1] = _WORKING_DIR .. "/utils/test utils/**"
+                filePatterns[#filePatterns + 1] = _MAIN_SCRIPT_DIR .. "/utils/test utils/**"
 
-                vpaths({ ["test utils"] = _WORKING_DIR .. "/utils/test utils/**" })
+                vpaths({ ["test utils"] = _MAIN_SCRIPT_DIR .. "/utils/test utils/**" })
             end
 
             if proj.pch_enabled and isProjectTypeMainType(projectType) then
@@ -791,12 +838,14 @@ function projects.addBuiltInProjects()
     }
 
     projects.load(catch2)
+
+    projects.scan(_MAIN_SCRIPT_DIR .. "/")
 end
 
 function projects.scan(path)
     local srcDirs = {}
 
-    for i, file in ipairs(os.matchfiles(path .. "**/.rythe_project")) do        
+    for i, file in ipairs(os.matchfiles(path .. "**/.rythe_project")) do
         srcDirs[#srcDirs + 1] = fs.parentPath(file)
     end
 

@@ -18,7 +18,7 @@ end
 function context.getCommand()
 	local cmd = "tools\\premake5 " .. _ACTION
 	for k,v in pairs(_OPTIONS) do
-		cmd = cmd .. "--" .. k .. "=" .. tostring(v) .. " "
+		cmd = cmd .. " --" .. k .. "=" .. tostring(v)
 	end
 
 	return utils.trim(cmd)

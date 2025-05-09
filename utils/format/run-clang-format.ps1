@@ -1,5 +1,5 @@
 $WorkspaceRootDir = Join-Path $PSScriptRoot ../..
-$ClangFormatPath = Join-Path $WorkspaceRootDir tools/clang-format
+$ClangFormatPath = Join-Path $PSScriptRoot clang-format
 
 function FormatDir {
     param($DirPath)

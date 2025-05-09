@@ -102,13 +102,16 @@ local function findProjectRoot(projectPath)
     local remainingPath = string.sub(projectPath, rootNameLength)
 
     while (isValidProjectType(projectType) ~= true) do
+        
+        if(remainingPath == "") then
+            return projectPath, ""
+        end
+
         rootName = fs.rootName(remainingPath)
         rootNameLength = string.len(rootName) + 2
         projectType = folderToProjectType(rootName)
         remainingPath = string.sub(remainingPath, rootNameLength)
     end
-
-
 
     local rootPath = string.sub(projectPath, 0, string.len(projectPath) - string.len(remainingPath))
 

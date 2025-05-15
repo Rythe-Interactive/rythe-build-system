@@ -835,7 +835,7 @@ end
 
 function projects.addBuiltInProjects()
     local catch2 = {
-        location = "libraries/third_party/catch2",
+        location = _MAIN_SCRIPT_DIR .. "/libraries/third_party/catch2",
         defines = { "CATCH_AMALGAMATED_CUSTOM_MAIN" },
         additional_external_include_dirs = { "./src" }
     }

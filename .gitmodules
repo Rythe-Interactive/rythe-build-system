@@ -1,0 +1,3 @@
+[submodule "libraries/third_party/catch2"]
+	path = libraries/third_party/catch2
+	url = https://github.com/Rythe-Interactive/Catch2.git

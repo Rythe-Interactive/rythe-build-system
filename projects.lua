@@ -16,7 +16,7 @@ local projects = {}
 -- ============================================================================================================================================================================================================
 --  init                                | nil                           | Initialization function, this allows you to dynamically change project fields upon project load based on the workspace context
 --  alias                               | <Project name>                | Alias for the project name
---  namespace                           | <Project name>                | Project namespace, also used for folder structures
+--  namespace                           | ""                            | Project namespace, also used for folder structures
 --  types                               | <Based on folder structure>   | Target types this projet uses, valid values: "application", "module", "editor", "library", "header-only", "util", "test"
 --  additional_types                    | [empty]                       | Extra target types to add to the project, can be used if you don't want to override the default project types
 --  dependencies                        | [empty]                       | Project dependency definitions, format: [(optional)<public|private>(default <private>)] [path][(optional):<type>(default <library>)]
@@ -246,15 +246,14 @@ local function projectTypeFilesDir(location, projectType, namespace)
         return location .. "/editor/"
     end
 
-    local namespaceSrcDir = location .. "/src/" .. namespace .. "/"
+    local namespaceSrcDir = location .. "/src/"
 
-    if namespace == "" or namespace == nil or os.isdir(namespaceSrcDir) ~= true then
-        local srcDir = location .. "/src/"
-        if os.isdir(srcDir) then
-            return srcDir
-        else
-            return location .. "/"
-        end
+    if namespace ~= "" then
+        namespaceSrcDir = namespaceSrcDir .. namespace .. "/"
+    end
+
+    if os.isdir(namespaceSrcDir) ~= true then
+        return location .. "/"
     end
 
     return namespaceSrcDir
@@ -276,7 +275,7 @@ local function loadProject(projectId, project, name, projectType)
     end
 
     if project.namespace == nil then
-        project.namespace = name
+        project.namespace = ""
     end
 
     if project.types == nil then

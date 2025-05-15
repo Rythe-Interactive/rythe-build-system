@@ -33,7 +33,7 @@ Projects are also the main way of interacting with the rythe build system.
 |-------------------------------------|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | init                                | nil                           | Initialization function, this allows you to dynamically change project fields upon project load based on the workspace context       |
 | alias                               | <Project name>                | Alias for the project name                                                                                                           |
-| namespace                           | <Project name>                | Project namespace, also used for folder structures                                                                                   |
+| namespace                           | ""                            | Project namespace, also used for folder structures                                                                                   |
 | types                               | <Based on folder structure>   | Target types this projet uses, valid values: "application", "module", "editor", "library", "header-only", "util", "test"             |
 | additional_types                    | [empty]                       | Extra target types to add to the project, can be used if you don't want to override the default project types                        |
 | dependencies                        | [empty]                       | Project dependency definitions, format: [(optional)<public|private>(default <private>)] [path][(optional):<type>(default <library>)] |

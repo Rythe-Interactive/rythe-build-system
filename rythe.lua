@@ -52,6 +52,8 @@ local rythe = premake.rythe
 
 rythe.projects = dofile("projects.lua")
 
+local utils = dofile("utils.lua")
+
 function rythe.architecture(architecture)
     rythe.buildSettings.architecture = architecture
 end
@@ -88,21 +90,23 @@ function rythe.targetVariantSuffix(variant)
     return rythe.variantSuffix[variant]
 end
 
-function rythe.setup(workspaces)
-    for i, wspc in ipairs(workspaces) do
-        workspace(wspc.name)
-            location(wspc.location)
-            configurations(wspc.configurations)
-        
-        os.copyfile(_WORKING_DIR .. "/.runsettings", _WORKING_DIR .. "/" .. wspc.location .. "/.runsettings")
-    end
+function rythe.setupWorkspace(wspc)
+    print("Setting up " .. wspc.name)
+
+    workspace(wspc.name)
+        location(wspc.location)
+        configurations(wspc.configurations)
+    
+    os.copyfile(_WORKING_DIR .. "/.runsettings", _WORKING_DIR .. "/" .. wspc.location .. "/.runsettings")
 end
 
-function rythe.configure(workspaces)
-    setup(workspaces)
+function rythe.configure(workspace)
+    projects.clearAll()
     projects.addBuiltInProjects()
     projects.scan("./")
     projects.resolveAllDeps()
+    
+    setupWorkspace(workspace)
     projects.sumbitAll()
 end
 

@@ -41,27 +41,6 @@ local projects = {}
 --  pch_enabled                         | false                         | Enable precompiled headers
 --  pch_file_name                       | "pch"                         | File name for pch header and pch source files (e.g. pch.hpp and pch.cpp will have the name: "pch")
 
-local function printTable(name, table, indent, recurse)
-    print(indent .. name .. ":")
-    indent = indent .. "\t"
-    for key, value in pairs(table) do
-        if type(value) == "table" then
-            if recurse ~= nil and recurse then
-                printTable(key, value, indent)
-            else
-                print(indent .. key .. ": " .. "table")
-            end
-        elseif type(value) == "function" then
-            print(indent .. key .. ": " .. "function")
-        elseif type(value) == "boolean" then
-            print(indent .. key .. ": " .. (value and "true" or "false"))
-        else
-            print(indent .. key .. ": " .. value)
-        end
-    end
-    indent = indent:sub(-1)
-end
-
 local function folderToProjectType(projectFolder)
     if projectFolder == "applications" then
         return "application"
@@ -177,8 +156,6 @@ local function findAssembly(assemblyId)
 
     if projectType == "" then        
         if project == nil then
-            print(assemblyId)
-            printTable("loadedProjects", loadedProjects, "")
             return nil, projectId, nil
         else
             return project, projectId, project.types[1]
@@ -366,7 +343,7 @@ function projects.load(project)
             end
             
             if thirdParty == nil then
-                print("Could not initialize a third party dependency of project \"" .. group .. "/" .. name .. "\"")
+                utils.printIndented("Could not initialize a third party dependency of project \"" .. group .. "/" .. name .. "\"")
                 return nil
             end
 
@@ -613,7 +590,9 @@ function projects.submit(proj)
     for i, projectType in ipairs(proj.types) do
         local fullGroupPath = projectTypeGroupPrefix(projectType) .. proj.group
         local binDir = "build/" .. _ACTION .. "/bin/"
-        print("Building " .. proj.name .. ": " .. projectType)
+        utils.printIndented("Submitting " .. proj.name .. ":\t" .. projectType)
+
+        utils.pushIndent()
 
         group(fullGroupPath)
         project(proj.alias .. projectNameSuffix(projectType))
@@ -668,7 +647,7 @@ function projects.submit(proj)
                             linkTargets[#linkTargets + 1] = depProject.alias .. projectNameSuffix(depType)
                         end
                     else
-                        print("\tDependency \"" .. assemblyId .. "\" was not found")
+                        utils.printIndented("Dependency \"" .. assemblyId .. "\" was not found")
                     end
                 end
                 
@@ -787,14 +766,14 @@ function projects.submit(proj)
 
                 if not os.isfile(pchHeader) then
                     io.writefile(pchHeader, "#pragma once\n#define RYTHE_PCH\n\n")
-                    print("Created: " .. pchHeader)
+                    utils.printIndented("Created: " .. pchHeader)
                 end
 
                 local pchHeaderFileName = path.getname(pchHeader)
 
                 if not os.isfile(pchSource) then
                     io.writefile(pchSource, "#include \"" .. pchHeaderFileName .. "\"\n\n")
-                    print("Created: " .. pchSource)
+                    utils.printIndented("Created: " .. pchSource)
                 end
 
                 includedirs({pchParentDir})
@@ -827,9 +806,15 @@ function projects.submit(proj)
                 end
             end
         filter("")
+
+        utils.popIndent()
     end
 
     group("")
+end
+
+function projects.clearAll()
+    loadedProjects = {};
 end
 
 function projects.addBuiltInProjects()
@@ -864,9 +849,12 @@ function projects.resolveAllDeps()
 end
 
 function projects.sumbitAll()
+    utils.pushIndent()
     for projectId, project in pairs(loadedProjects) do
         projects.submit(project)
     end
+    utils.popIndent()
+    print("")
 end
 
 return projects

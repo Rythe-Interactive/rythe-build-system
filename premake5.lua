@@ -32,13 +32,8 @@ if(_ACTION ~= nil) then
 
     local r = require("rythe")
 
-    local workspace = {
-        name = _OPTIONS["workspace-name"],
-        location = _OPTIONS["workspace-location"] or ("build/" .. _ACTION),
-        configurations = { "Debug", "Debug-no-inline", "Development", "Release", "Debug-asan", "Release-profiling" }
-    }
+    r.projects.clearAll()
 
-    r.setup({workspace})
     r.projects.addBuiltInProjects()
 
     if(_OPTIONS["single-project"] ~= nil) then
@@ -48,5 +43,14 @@ if(_ACTION ~= nil) then
     end
 
     r.projects.resolveAllDeps()
-    r.projects.sumbitAll()
+
+    local workspace = {
+        name = _OPTIONS["workspace-name"],
+        location = _OPTIONS["workspace-location"] or ("build/" .. _ACTION),
+        configurations = { "Debug", "Debug-no-inline", "Development", "Release", "Debug-asan", "Release-profiling" }
+    }
+
+    r.setupWorkspace(workspace)
+        r.projects.sumbitAll()
+
 end

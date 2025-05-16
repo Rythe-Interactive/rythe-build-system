@@ -5,26 +5,52 @@
     .rythe_project files also allows you to customize the project, and report third-party dependencies that don't use the rythe build system.
 ]]
 
+newoption {
+    trigger = "enumerate-projects",
+    description = "Enumerate all available projects using scan(\"./\")",
+    category = "Utility"
+}
+
+newoption {
+    trigger = "workspace-name",
+    value = "NAME",
+    description = "Name to give you workspace/solution file.",
+    default = "rythe",
+    category = "Workspace setup"
+}
+
+newoption {
+    trigger = "workspace-location",
+    value = "PATH",
+    description = "Directory to create workspace in.",
+    category = "Workspace setup"
+}
+
+newoption {
+    trigger = "single-project",
+    value = "PATH",
+    description = "Directory of a project if you only want to have one project.",
+    category = "Workspace setup"
+}
+
+if(_OPTIONS["enumerate-projects"] ~= nil) then
+    os.chdir(_WORKING_DIR)
+    
+    local r = require("rythe")
+    r.projects.clearAll()
+    r.projects.addBuiltInProjects()
+    r.projects.scan("./")
+    r.projects.resolveAllDeps()
+
+    r.utils.printIndented("Found projects:")
+    r.utils.pushIndent()
+    for projectId, project in pairs(r.loadedProjects) do
+        r.utils.printIndented(projectId)
+    end
+    r.utils.popIndent()
+end
+
 if(_ACTION ~= nil) then
-    newoption {
-        trigger = "workspace-name",
-        value = "name",
-        description = "Name to give you workspace/solution file.",
-        default = "rythe"
-    }
-
-    newoption {
-        trigger = "workspace-location",
-        value = "dir",
-        description = "Directory to create workspace in.",
-    }
-
-    newoption {
-        trigger = "single-project",
-        value = "project-dir",
-        description = "Directory of a project if you only want to have one project.",
-    }
-
     os.chdir(_WORKING_DIR)
 
     filter("configurations:Debug-no-inline")
@@ -51,6 +77,8 @@ if(_ACTION ~= nil) then
     }
 
     r.setupWorkspace(workspace)
-        r.projects.sumbitAll()
+        r.utils.pushIndent()
+        r.projects.submitAll()
+        r.utils.popIndent()
 
 end

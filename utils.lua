@@ -42,27 +42,27 @@ function utils.printIndented(msg)
 end
 
 function utils.printTable(name, table, recurse)
-    printIndented(name .. ":")
+    utils.printIndented(name .. ":")
 
-    pushIndent()
+   utils. pushIndent()
         for key, value in pairs(table) do
             if type(value) == "table" then
                 if recurse ~= nil and recurse then
-                    pushIndent()
-                        printTable(key, value, recurse)
-                    popIndent()
+                    utils.pushIndent()
+                        utils.printTable(key, value, recurse)
+                    utils.popIndent()
                 else
-                    printIndented(key .. ": " .. "table")
+                    utils.printIndented(key .. ": " .. "table")
                 end
             elseif type(value) == "function" then
-                printIndented(key .. ": " .. "function")
+                utils.printIndented(key .. ": " .. "function")
             elseif type(value) == "boolean" then
-                printIndented(key .. ": " .. (value and "true" or "false"))
+                utils.printIndented(key .. ": " .. (value and "true" or "false"))
             else
-                printIndented(key .. ": " .. value)
+                utils.printIndented(key .. ": " .. value)
             end
         end
-    popIndent()
+    utils.popIndent()
 end
 
 return utils

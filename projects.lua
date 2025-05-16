@@ -1,10 +1,9 @@
 local fs = dofile("filesystem.lua")
 local ctx = dofile("context.lua")
-local utils = dofile("utils.lua")
 
 local rythe = premake.rythe
-local loadedProjects = rythe.loadedProjects
 local buildSettings = rythe.buildSettings
+local utils = rythe.utils
 
 local projects = {}
 
@@ -152,7 +151,7 @@ end
 local function findAssembly(assemblyId)
     local projectId = string.match(assemblyId, "^([^:]+)")
     local projectType = string.sub(assemblyId, string.len(projectId) + 2)
-    local project = loadedProjects[projectId]
+    local project = rythe.loadedProjects[projectId]
 
     if projectType == "" then        
         if project == nil then
@@ -313,7 +312,7 @@ local function loadProject(projectId, project, name, projectType)
         project.files = { "./**" }
     end
 
-    loadedProjects[projectId] = project
+    rythe.loadedProjects[projectId] = project
 
     return project
 end
@@ -322,8 +321,8 @@ function projects.load(project)
     local projectFile, thirdPartyFile, group, name, projectType = find(project.location)
     local projectId = getProjectId(group, name)
     
-    if loadedProjects[projectId] ~= nil then
-        return loadedProjects[projectId]
+    if rythe.loadedProjects[projectId] ~= nil then
+        return rythe.loadedProjects[projectId]
     end
 
     if projectFile ~= nil then
@@ -575,6 +574,17 @@ function projects.resolveDeps(proj)
 end
 
 function projects.submit(proj)
+    if type(proj) == "string" then
+        local loadedProj = rythe.loadedProjects[proj]
+        if loadedProj == nil then
+            utils.printIndented("Project \"" .. proj .. "\" was not found!")
+            return
+        end
+
+        projects.submit(loadedProj)
+        return
+    end
+
     local configSetup = { 
         [rythe.configuration.RELEASE] = setupRelease,
         [rythe.configuration.DEVELOPMENT] = setupDevelopment,
@@ -814,7 +824,7 @@ function projects.submit(proj)
 end
 
 function projects.clearAll()
-    loadedProjects = {};
+    rythe.loadedProjects = {};
 end
 
 function projects.addBuiltInProjects()
@@ -842,19 +852,16 @@ function projects.scan(path)
 end
 
 function projects.resolveAllDeps()
-    local sourceProjects = utils.copyTable(loadedProjects)
+    local sourceProjects = utils.copyTable(rythe.loadedProjects)
     for projectId, project in pairs(sourceProjects) do
         projects.resolveDeps(project)
     end
 end
 
-function projects.sumbitAll()
-    utils.pushIndent()
-    for projectId, project in pairs(loadedProjects) do
+function projects.submitAll()
+    for projectId, project in pairs(rythe.loadedProjects) do
         projects.submit(project)
     end
-    utils.popIndent()
-    print("")
 end
 
 return projects

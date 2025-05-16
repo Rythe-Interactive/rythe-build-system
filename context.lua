@@ -16,7 +16,12 @@ end
 
 -- Gets the command that was used to call premake with
 function context.getCommand()
-	local cmd = _MAIN_SCRIPT_DIR .. "\\premake5 " .. _ACTION
+	local cmd = _MAIN_SCRIPT_DIR .. "\\premake5"
+
+	if _ACTION ~= nil then
+		cmd = cmd .. " " .. _ACTION
+	end
+
 	for k,v in pairs(_OPTIONS) do
 		cmd = cmd .. " --" .. k .. "=" .. tostring(v)
 	end

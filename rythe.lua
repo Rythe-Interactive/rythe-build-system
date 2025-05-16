@@ -15,7 +15,8 @@ premake.rythe = {
     buildSettings = {
         architecture = "x86_64",
         cppVersion = "C++20"
-    }
+    },
+    utils = dofile("utils.lua")
 }
 
 premake.rythe.configNames = { 
@@ -101,13 +102,15 @@ function rythe.setupWorkspace(wspc)
 end
 
 function rythe.configure(workspace)
-    projects.clearAll()
-    projects.addBuiltInProjects()
-    projects.scan("./")
-    projects.resolveAllDeps()
-    
+    rythe.projects.clearAll()
+    rythe.projects.addBuiltInProjects()
+    rythe.projects.scan("./")
+    rythe.projects.resolveAllDeps()
+
     setupWorkspace(workspace)
-    projects.sumbitAll()
+        rythe.utils.pushIndent()
+        projects.submitAll()
+        rythe.utils.popIndent()
 end
 
 return rythe

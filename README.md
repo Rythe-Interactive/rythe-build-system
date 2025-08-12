@@ -42,6 +42,7 @@ Projects are also the main way of interacting with the rythe build system.
 | warnings_as_errors                  | true                          | Treat warnings as errors                                                                                                             |
 | additional_warnings                 | nil                           | List of additional warnings to enable, for Visual Studio this needs to be the warning number instead of the name                     |
 | exclude_warnings                    | nil                           | List of warnings to explicitly disable, for Visual Studio this needs to be the warning number instead of the name                    |
+| disable_exceptions                  | true                          | Disable exceptions                                                                                                                   |
 | floating_point_config               | "Default"                     | Floating point configuration for the compiler to use, valid values: "Default", "Fast", "Strict", "None"                              |
 | vector_extensions                   | nil                           | Which vector extension to enable, see: https://premake.github.io/docs/vectorextensions/                                              |
 | isa_extensions                      | nil                           | see: https://premake.github.io/docs/isaextensions/                                                                                   |

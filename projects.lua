@@ -24,6 +24,7 @@ local projects = {}
 --  warnings_as_errors                  | true                          | Treat warnings as errors
 --  additional_warnings                 | nil                           | List of additional warnings to enable, for Visual Studio this needs to be the warning number instead of the name
 --  exclude_warnings                    | nil                           | List of warnings to explicitly disable, for Visual Studio this needs to be the warning number instead of the name
+--  disable_exceptions                  | true                          | Disable exceptions
 --  floating_point_config               | "Default"                     | Floating point configuration for the compiler to use, valid values: "Default", "Fast", "Strict", "None"
 --  vector_extensions                   | nil                           | Which vector extension to enable, see: https://premake.github.io/docs/vectorextensions/
 --  isa_extensions                      | nil                           | see: https://premake.github.io/docs/isaextensions/
@@ -282,6 +283,10 @@ local function loadProject(projectId, project, name, projectType)
 
     if project.link_time_optimization == nil then
         project.link_time_optimization = true
+    end
+
+    if project.disable_exceptions == nil then
+        project.disable_exceptions = true
     end
 
     if project.floating_point_config == nil then
@@ -692,6 +697,7 @@ function projects.submit(proj)
                 language("C++")
                 cppdialect(buildSettings.cppVersion)
                 warnings(proj.warning_level)
+                exceptionhandling(proj.disable_exceptions and "Off" or "Default" )
                 floatingpoint(proj.floating_point_config)
 
                 if proj.additional_warnings ~= nil then

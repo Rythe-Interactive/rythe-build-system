@@ -669,10 +669,6 @@ function projects.submit(proj)
                 
                 dependson(depNames)
             end
-            
-            if proj.additional_link_targets ~= nil then
-                links(proj.additional_link_targets)
-            end
 
             architecture(buildSettings.architecture)
             
@@ -687,6 +683,10 @@ function projects.submit(proj)
 
                 if not utils.tableIsEmpty(libDirs) then
                     libdirs(libDirs)
+                end
+                
+                if not utils.tableIsEmpty(proj.additional_link_targets) then
+                    links(proj.additional_link_targets)
                 end
 
                 if not utils.tableIsEmpty(proj.additional_include_dirs) then

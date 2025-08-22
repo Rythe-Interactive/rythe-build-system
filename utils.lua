@@ -43,23 +43,27 @@ end
 
 function utils.printTable(name, table, recurse)
     utils.printIndented(name .. ":")
-
-   utils. pushIndent()
-        for key, value in pairs(table) do
-            if type(value) == "table" then
-                if recurse ~= nil and recurse then
-                    utils.pushIndent()
-                        utils.printTable(key, value, recurse)
-                    utils.popIndent()
+    
+    utils.pushIndent()
+        if utils.tableIsEmpty(table) then
+            print("empty")
+        else
+            for key, value in pairs(table) do
+                if type(value) == "table" then
+                    if recurse ~= nil and recurse then
+                        utils.pushIndent()
+                            utils.printTable(key, value, recurse)
+                        utils.popIndent()
+                    else
+                        utils.printIndented(key .. ": " .. "table")
+                    end
+                elseif type(value) == "function" then
+                    utils.printIndented(key .. ": " .. "function")
+                elseif type(value) == "boolean" then
+                    utils.printIndented(key .. ": " .. (value and "true" or "false"))
                 else
-                    utils.printIndented(key .. ": " .. "table")
+                    utils.printIndented(key .. ": " .. value)
                 end
-            elseif type(value) == "function" then
-                utils.printIndented(key .. ": " .. "function")
-            elseif type(value) == "boolean" then
-                utils.printIndented(key .. ": " .. (value and "true" or "false"))
-            else
-                utils.printIndented(key .. ": " .. value)
             end
         end
     utils.popIndent()

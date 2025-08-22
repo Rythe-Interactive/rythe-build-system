@@ -230,7 +230,7 @@ local function projectTypeFilesDir(location, projectType, namespace)
         namespaceSrcDir = namespaceSrcDir .. namespace .. "/"
     end
 
-    if os.isdir(namespaceSrcDir) ~= true then
+    if not os.isdir(namespaceSrcDir) then
         return location .. "/"
     end
 
@@ -530,11 +530,17 @@ local function getDepsRecursive(project, projectType)
                     thirdPartyProject.files[#thirdPartyProject.files + 1] = includeDir .. "**"
                 end
 
-                if utils.tableIsEmpty(thirdPartyProject.files) then
-                    thirdPartyProject.files = {
-                        path .. "/src/**",
-                        path .. "/include/**"
-                    }
+                if utils.tableIsEmpty(thirdPartyProject.files) then                    
+                    if os.isdir(path .. "/include/") then
+                        thirdPartyProject.files[#thirdPartyProject.files + 1] = path .. "/include/**"
+                    end
+                    if os.isdir(path .. "/src/") then
+                        thirdPartyProject.files[#thirdPartyProject.files + 1] = path .. "/src/**"
+                    end
+
+                    if utils.tableIsEmpty(thirdPartyProject.files) then
+                        thirdPartyProject.files = { path .. "/**" }
+                    end
                 end
 
                 thirdPartyProject.src = project.src
@@ -636,7 +642,7 @@ function projects.submit(proj)
                 allDefines = {}
             end
             
-            local libDirs = { proj.location .. "/third_party/lib/" }
+            local libDirs = { fs.sanitize(proj.location .. "/third_party/lib/") }
             local linkTargets = {}
             local externalIncludeDirs = {}
             
@@ -649,15 +655,19 @@ function projects.submit(proj)
                     if depProject ~= nil then
                         externalIncludeDirs[#externalIncludeDirs + 1] = projectTypeFilesDir(depProject.location, depType, "")
                         
-                        if isThirdPartyProject(depId) and os.isdir(depProject.location .. "/include/") then
-                            externalIncludeDirs[#externalIncludeDirs + 1] = depProject.location .. "/include/"
+                        if isThirdPartyProject(depId) then
+                            if os.isdir(depProject.location .. "/include/") then
+                                externalIncludeDirs[#externalIncludeDirs + 1] = depProject.location .. "/include/"
+                            elseif not os.isdir(depProject.location .. "/src/") then
+                                externalIncludeDirs[#externalIncludeDirs + 1] = depProject.location
+                            end
                         end
 
                         depNames[#depNames + 1] = depProject.alias .. projectNameSuffix(depType)
                         
                         allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.alias) .. "=1" or string.upper(depProject.group:gsub("[/\\]", "_")) .. "_" .. string.upper(depProject.alias:gsub("%-","_")) .. "=1"
 
-                        libDirs[#libDirs + 1] = binDir .. depProject.group .. "/" .. depProject.name
+                        libDirs[#libDirs + 1] = fs.sanitize(binDir .. depProject.group .. "/" .. depProject.name)
                         
                         if depType ~= "header-only" then
                             linkTargets[#linkTargets + 1] = depProject.alias .. projectNameSuffix(depType)
@@ -672,7 +682,7 @@ function projects.submit(proj)
 
             architecture(buildSettings.architecture)
             
-            local targetDir = binDir .. proj.group .. "/" .. proj.name
+            local targetDir = fs.sanitize(binDir .. proj.group .. "/" .. proj.name)
             targetdir(targetDir)
             objdir(binDir .. "obj")
 
@@ -687,6 +697,21 @@ function projects.submit(proj)
                 
                 if not utils.tableIsEmpty(proj.additional_link_targets) then
                     links(proj.additional_link_targets)
+                    
+                    if os.host() == "windows" then
+                        local copyCommands = {}
+                        for i, libDir in ipairs(libDirs) do
+                            if libDir ~= targetDir then
+                                local fullSrcPath = fs.sanitize(fs.parentPath(_MAIN_SCRIPT_DIR) .. "/" .. libDir) .. fs.getPathSeperator() .. "**.dll"
+                                if not utils.tableIsEmpty(os.matchfiles(fullSrcPath)) then
+                                    local fullDstPath = fs.sanitize(fs.parentPath(_MAIN_SCRIPT_DIR) .. "/" .. targetDir) .. fs.getPathSeperator()
+                                    copyCommands[#copyCommands + 1] = "xcopy \"" .. fullSrcPath .. "\" \"" .. fullDstPath .. "\" /i /r /y /s /c"
+                                end
+                            end
+                        end
+
+                        postbuildcommands(copyCommands)
+		  	        end
                 end
 
                 if not utils.tableIsEmpty(proj.additional_include_dirs) then

@@ -46,7 +46,7 @@ function utils.printTable(name, table, recurse)
     
     utils.pushIndent()
         if utils.tableIsEmpty(table) then
-            print("empty")
+            utils.printIndented("empty")
         else
             for key, value in pairs(table) do
                 if type(value) == "table" then

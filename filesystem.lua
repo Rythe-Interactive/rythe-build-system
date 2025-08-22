@@ -2,6 +2,14 @@ local fs = {}
 
 local utils = dofile("utils.lua")
 
+function fs.getPathSeperator()
+    if os.host() == "windows" then
+        return "\\"
+    else
+        return "/"
+    end
+end
+
 function fs.exists(file)
     local ok, err, code = os.rename(file, file)
     if not ok then
@@ -50,6 +58,16 @@ function fs.resolvePaths(paths, root)
     end
 
     return resolved
+end
+
+function fs.sanitize(path)
+    local result, count = string.gsub(path, "([/\\]+)", fs.getPathSeperator())
+    
+    if utils.stringEndsWith(result, fs.getPathSeperator()) then
+        result = result:sub(1, -2)
+    end
+
+    return result
 end
 
 return fs

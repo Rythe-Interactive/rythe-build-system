@@ -33,6 +33,7 @@ local projects = {}
 --  exclude_files                       | nil                           | Exclude patterns to exclude source files with
 --  additional_include_dirs             | [empty]                       | Additional include dirs for #include ""
 --  additional_external_include_dirs    | [empty]                       | Additional external include dirs for #include <> on top of the ones Rythe will auto detect from dependencies
+--  additional_link_targets             | [empty]                       | Additional prebuilt libraries to link.
 --  pre_build                           | nil                           | Prebuild command
 --  post_build                          | nil                           | Postbuild command
 --  pre_link                            | nil                           | Prelink command
@@ -635,7 +636,7 @@ function projects.submit(proj)
                 allDefines = {}
             end
             
-            local libDirs = {}
+            local libDirs = { proj.location .. "/third_party/lib/" }
             local linkTargets = {}
             local externalIncludeDirs = {}
             
@@ -669,6 +670,10 @@ function projects.submit(proj)
                 dependson(depNames)
             end
             
+            if proj.additional_link_targets ~= nil then
+                links(proj.additional_link_targets)
+            end
+
             architecture(buildSettings.architecture)
             
             local targetDir = binDir .. proj.group .. "/" .. proj.name

@@ -14,7 +14,7 @@ premake.rythe = {
     loadedProjects = {},
     buildSettings = {
         architecture = "x86_64",
-        cppVersion = "C++20"
+        cppVersion = "C++23"
     },
     utils = dofile("utils.lua")
 }

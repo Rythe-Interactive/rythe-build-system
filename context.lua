@@ -1,6 +1,7 @@
 local context = {}
 
 local utils = dofile("utils.lua")
+local fs = dofile("filesystem.lua")
 
 local function hasFilter(list, item)
 	if list then
@@ -27,6 +28,14 @@ function context.getCommand()
 	end
 
 	return utils.trim(cmd)
+end
+
+function context.getWorkspaceRootDir()
+	return fs.sanitize(fs.parentPath(_MAIN_SCRIPT_DIR) .. "/")
+end
+
+function context.getProjectDir()
+	return fs.sanitize(fs.parentPath(_MAIN_SCRIPT_DIR) .. "/" .. context.project_location .. "/")
 end
 
 function context.hasConfiguration(configuration)

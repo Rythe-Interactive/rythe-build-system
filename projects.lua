@@ -41,6 +41,7 @@ local projects = {}
 --  link_time_optimization              | true                          | Enable LTO
 --  pch_enabled                         | false                         | Enable precompiled headers
 --  pch_file_name                       | "pch"                         | File name for pch header and pch source files (e.g. pch.hpp and pch.cpp will have the name: "pch")
+--  debug_args                          | nil                           | List of arguments to provide to the executable while debugging.
 
 local function folderToProjectType(projectFolder)
     if projectFolder == "applications" then
@@ -344,6 +345,7 @@ function projects.load(project)
             thirdParty.src = thirdPartyFile
 
             if thirdParty.init ~= nil then
+                ctx.project_location = third_party.location
                 thirdParty = thirdParty:init(ctx)
             end
             
@@ -377,6 +379,7 @@ function projects.load(project)
     project.name = name
     project.src = projectFile
     if project.init ~= nil then
+        ctx.project_location = project.location
         project = project:init(ctx)
     end
 
@@ -760,6 +763,10 @@ function projects.submit(proj)
 
                 if proj.isa_extensions ~= nil then
                     isaextensions(proj.isa_extensions)
+                end
+
+                if proj.debug_args ~= nil then
+                    debugargs(proj.debug_args)
                 end
 
                 intrinsics("On")

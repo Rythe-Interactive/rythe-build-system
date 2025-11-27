@@ -6,10 +6,10 @@ local project = {
 function project.init(proj, ctx)
     proj.pre_build = {
         "cd " .. _WORKING_DIR,
-        "powershell -File " .. _MAIN_SCRIPT_DIR .. "/utils/format/run-clang-format.ps1"
+        "powershell -File " .. _MAIN_SCRIPT_DIR .. "/utils/format/run-clang-format.ps1" -- This is honestly a really bad idea...
     }
     
     return proj
 end
 
-return project
+return nil

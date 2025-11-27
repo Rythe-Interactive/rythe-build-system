@@ -325,6 +325,10 @@ local function loadProject(projectId, project, name, projectType)
 end
 
 function projects.load(project)
+    if(project == nil) then
+        return nil
+    end
+
     local projectFile, thirdPartyFile, group, name, projectType = find(project.location)
     local projectId = getProjectId(group, name)
     
@@ -335,6 +339,11 @@ function projects.load(project)
     if projectFile ~= nil then
         local projectPath = project.location
         project = dofile(projectFile)
+        
+        if(project == nil) then
+            return nil
+        end
+
         project.location = projectPath
     end
 
@@ -349,29 +358,26 @@ function projects.load(project)
                 thirdParty = thirdParty:init(ctx)
             end
             
-            if thirdParty == nil then
-                utils.printIndented("Could not initialize a third party dependency of project \"" .. group .. "/" .. name .. "\"")
-                return nil
+            if thirdParty ~= nil then
+                local thirdPartyType = "library"
+
+                if not utils.tableIsEmpty(thirdParty.types) then
+                    thirdPartyType = thirdParty.types[1]
+                end
+
+                local thirdPartyId = getProjectId(thirdParty.group, thirdParty.name)
+
+                if not isThirdPartyProject(thirdPartyId) then
+                    thirdParty.group = "third_party/" .. thirdParty.group
+                    thirdPartyId = getProjectId(thirdParty.group, thirdParty.name)
+                end
+
+                if thirdParty.location == nil then
+                    thirdParty.location = project.location .. "/third_party/" .. thirdParty.name
+                end
+
+                thirdParty = loadProject(thirdPartyId, thirdParty, thirdParty.name, thirdPartyType)
             end
-
-            local thirdPartyType = "library"
-
-            if not utils.tableIsEmpty(thirdParty.types) then
-                thirdPartyType = thirdParty.types[1]
-            end
-
-            local thirdPartyId = getProjectId(thirdParty.group, thirdParty.name)
-
-            if not isThirdPartyProject(thirdPartyId) then
-                thirdParty.group = "third_party/" .. thirdParty.group
-                thirdPartyId = getProjectId(thirdParty.group, thirdParty.name)
-            end
-
-            if thirdParty.location == nil then
-                thirdParty.location = project.location .. "/third_party/" .. thirdParty.name
-            end
-
-            thirdParty = loadProject(thirdPartyId, thirdParty, thirdParty.name, thirdPartyType)
         end
     end
 
@@ -381,6 +387,10 @@ function projects.load(project)
     if project.init ~= nil then
         ctx.project_location = project.location
         project = project:init(ctx)
+
+        if(project == nil) then
+            return nil
+        end
     end
 
     if not utils.tableIsEmpty(project.types) then

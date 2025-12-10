@@ -780,6 +780,10 @@ function projects.submit(proj)
                 end
 
                 intrinsics("On")
+                characterset("Unicode")
+                filter { "toolset:msc" }
+                    buildoptions{ "/utf-8" }
+                filter {}
             end
 
             if projectType == "application" then

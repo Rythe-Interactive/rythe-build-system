@@ -308,11 +308,16 @@ local function loadProject(projectId, project, name, projectType)
     end
 
     if utils.tableIsEmpty(project.defines) then
-        project.defines = { "PROJECT_NAME=" .. project.alias, "PROJECT_FULL_NAME=" .. project.name, "PROJECT_NAMESPACE=" .. project.namespace }
+        project.defines = { "PROJECT_NAME=" .. project.alias, "PROJECT_FULL_NAME=" .. project.name }
     else
         project.defines[#project.defines +1 ] = "PROJECT_NAME=" .. project.alias
         project.defines[#project.defines +1 ] = "PROJECT_FULL_NAME=" .. project.name
+    end
+
+    if project.namespace ~= "" then
         project.defines[#project.defines +1 ] = "PROJECT_NAMESPACE=" .. project.namespace
+    else
+        project.defines[#project.defines +1 ] = "PROJECT_NAMESPACE"
     end
 
     if project.files == nil then -- files can be an empty table if no files need to be loaded

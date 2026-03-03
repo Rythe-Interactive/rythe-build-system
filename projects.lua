@@ -683,7 +683,7 @@ function projects.submit(proj)
 
                         depNames[#depNames + 1] = depProject.alias .. projectNameSuffix(depType)
                         
-                        allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.alias) .. "=1" or string.upper(depProject.group:gsub("[/\\]", "_")) .. "_" .. string.upper(depProject.alias:gsub("%-","_")) .. "=1"
+                        allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.alias:gsub("%-","_")) .. "=1" or string.upper(depProject.group:gsub("[/\\]", "_")) .. "_" .. string.upper(depProject.alias:gsub("%-","_")) .. "=1"
 
                         libDirs[#libDirs + 1] = fs.sanitize(binDir .. depProject.group .. "/" .. depProject.name)
                         

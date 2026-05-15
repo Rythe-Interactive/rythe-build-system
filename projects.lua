@@ -42,6 +42,7 @@ local projects = {}
 --  pch_enabled                         | false                         | Enable precompiled headers
 --  pch_file_name                       | "pch"                         | File name for pch header and pch source files (e.g. pch.hpp and pch.cpp will have the name: "pch")
 --  debug_args                          | nil                           | List of arguments to provide to the executable while debugging.
+--  natvis                              | nil                           | Natvis file (will take a file named ".natvis" if it exists and no value is provided)
 
 local function folderToProjectType(projectFolder)
     if projectFolder == "applications" then
@@ -322,6 +323,10 @@ local function loadProject(projectId, project, name, projectType)
 
     if project.files == nil then -- files can be an empty table if no files need to be loaded
         project.files = { "./**" }
+    end
+
+    if project.natvis == nil and fs.exists(project.location .. "/.natvis") then
+        project.natvis = ".natvis"
     end
 
     rythe.loadedProjects[projectId] = project
@@ -859,6 +864,10 @@ function projects.submit(proj)
             if proj.src ~= nil then
                 filePatterns[#filePatterns + 1] = proj.src
                 vPaths[#vPaths + 1] = fs.parentPath(proj.src)
+            end
+
+            if proj.natvis ~= nil then
+                filePatterns[#filePatterns + 1] = proj.location .. "/" .. proj.natvis
             end
 
             vpaths({ ["*"] = vPaths})

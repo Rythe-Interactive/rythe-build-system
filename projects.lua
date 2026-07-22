@@ -449,6 +449,7 @@ local function setupDebug()
     filter(getConfigFilter(rythe.configuration.DEBUG))
         defines { "DEBUG" }
         optimize("Debug")
+        inlining("Disabled")
         symbols("On")
 end
 

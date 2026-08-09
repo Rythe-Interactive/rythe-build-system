@@ -16,7 +16,7 @@ local projects = {}
 --  init                                | nil                           | Initialization function, this allows you to dynamically change project fields upon project load based on the workspace context
 --  alias                               | <Project name>                | Alias for the project name
 --  namespace                           | ""                            | Project namespace, also used for folder structures
---  types                               | <Based on folder structure>   | Target types this projet uses, valid values: "application", "module", "editor", "library", "header-only", "util", "test"
+--  types                               | <Based on folder structure>   | Target types this projet uses, valid values: "application", "module", "editor", "library", "header-only", "tool", "util", "test"
 --  additional_types                    | [empty]                       | Extra target types to add to the project, can be used if you don't want to override the default project types
 --  dependencies                        | [empty]                       | Project dependency definitions, format: [(optional)<public|private>(default <private>)] [path][(optional):<type>(default <library>)]
 --  fast_up_to_date_check               | true                          | Enable or disable Visual Studio check if project outputs are already up to date (handy to turn off on util projects)
@@ -51,6 +51,8 @@ local function folderToProjectType(projectFolder)
         return "module"
     elseif projectFolder == "libraries" then
         return "library"
+    elseif projectFolder == "tools" then
+        return "tool"
     elseif projectFolder == "utils" then
         return "util"
     end
@@ -68,6 +70,8 @@ local function isValidProjectType(projectType)
     elseif projectType == "editor" then
         return true
     elseif projectType == "library" or projectType == "header-only" then
+        return true
+    elseif projectType == "tool" then
         return true
     elseif projectType == "test" then
         return true
@@ -175,7 +179,7 @@ local function kindName(projectType)
         return "ConsoleApp"
     elseif projectType == "editor" then
         return "SharedLib"
-    elseif projectType == "application" then
+    elseif projectType == "application" or projectType == "tool" then
         return "ConsoleApp"
     elseif projectType == "library" then
         return "StaticLib"
@@ -196,10 +200,12 @@ local function projectTypeGroupPrefix(projectType)
         return "3 - modules/"
     elseif projectType == "editor" then
         return "4 - editor/"
+    elseif projectType == "tool" then
+        return "5 - tools/"
     elseif projectType == "library" or projectType == "header-only" then
-        return "5 - libraries/"
+        return "6 - libraries/"
     elseif projectType == "test" then
-        return "6 - tests/"
+        return "7 - tests/"
     end
 
     assert(false, "Unknown project type: \"" .. projectType .. "\"")
@@ -226,17 +232,20 @@ local function projectTypeFilesDir(location, projectType, namespace)
         return location .. "/editor/"
     end
 
-    local namespaceSrcDir = location .. "/src/"
+    local srcDir = location .. "/src/"
 
     if namespace ~= "" then
-        namespaceSrcDir = namespaceSrcDir .. namespace .. "/"
+        local namespaceSrcDir = srcDir .. namespace .. "/"
+        if os.isdir(namespaceSrcDir) then
+            return namespaceSrcDir
+        end
     end
 
-    if not os.isdir(namespaceSrcDir) then
+    if not os.isdir(srcDir) then
         return location .. "/"
     end
 
-    return namespaceSrcDir
+    return srcDir
 end
 
 local function isProjectTypeMainType(projectType)

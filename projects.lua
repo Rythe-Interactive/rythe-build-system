@@ -874,7 +874,7 @@ function projects.submit(proj)
                         end
                     end
 
-                    io.writefile(pchHeader, pchContent .. "\n")
+                    io.writefile(pchHeader, pchContent)
                     utils.printIndented("Created: " .. pchHeader)
                 else
                     if not os.isfile(pchHeader) then

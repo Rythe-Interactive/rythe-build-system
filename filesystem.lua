@@ -70,4 +70,22 @@ function fs.sanitize(path)
     return result
 end
 
+function fs.makeRelative(path, root)
+    path = fs.sanitize(path)
+    root = fs.sanitize(root)
+    if path == root then
+        path = "."
+    else
+        if root:sub(#root, #root) ~= fs.getPathSeperator() then
+        root = root .. fs.getPathSeperator()
+        end
+
+        if path:sub(1, #root) == root then
+        path = path:sub(#root + 1, -1)
+        end
+    end
+
+    return path
+end
+
 return fs

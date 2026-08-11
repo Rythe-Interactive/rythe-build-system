@@ -867,12 +867,11 @@ function projects.submit(proj)
                     for i, file in ipairs(os.matchfiles(projectSrcDir .. "**/*.hpp")) do
                         headerFiles[#headerFiles + 1] = fs.makeRelative(os.realpath(file), os.realpath(pchParentDir))
                     end
-                    for i, file in ipairs(os.matchfiles(projectSrcDir .. "**/*.h")) do
-                        headerFiles[#headerFiles + 1] = fs.makeRelative(os.realpath(file), os.realpath(pchParentDir))
-                    end
 
                     for i, file in ipairs(headerFiles) do
-                        pchContent = pchContent .. "#include \"" .. file .. "\"\n"
+                        if file ~= fs.fileName(pchHeader) then
+                            pchContent = pchContent .. "#include \"" .. file .. "\"\n"
+                        end
                     end
 
                     io.writefile(pchHeader, pchContent .. "\n")

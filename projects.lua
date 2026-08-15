@@ -659,8 +659,8 @@ function projects.submit(proj)
         utils.pushIndent()
 
         group(fullGroupPath)
-        project(proj.alias .. projectNameSuffix(projectType))
-            filename(proj.alias .. projectNameSuffix(projectType))
+        project(proj.name .. projectNameSuffix(projectType))
+            filename(proj.name .. projectNameSuffix(projectType))
             location("build/" .. _ACTION .. "/" .. proj.group)
 
             fastuptodate(proj.fast_up_to_date_check)
@@ -705,14 +705,14 @@ function projects.submit(proj)
                             end
                         end
 
-                        depNames[#depNames + 1] = depProject.alias .. projectNameSuffix(depType)
+                        depNames[#depNames + 1] = depProject.name .. projectNameSuffix(depType)
                         
-                        allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.alias:gsub("%-","_")) .. "=1" or string.upper(depProject.group:gsub("[/\\]", "_")) .. "_" .. string.upper(depProject.alias:gsub("%-","_")) .. "=1"
+                        allDefines[#allDefines + 1] = depProject.group == "" and string.upper(depProject.name:gsub("%-","_")) .. "=1" or string.upper(depProject.group:gsub("[/\\]", "_")) .. "_" .. string.upper(depProject.alias:gsub("%-","_")) .. "=1"
 
                         libDirs[#libDirs + 1] = fs.sanitize(binDir .. depProject.group .. "/" .. depProject.name)
                         
                         if depType ~= "header-only" then
-                            linkTargets[#linkTargets + 1] = depProject.alias .. projectNameSuffix(depType)
+                            linkTargets[#linkTargets + 1] = depProject.name .. projectNameSuffix(depType)
                         end
                     else
                         utils.printIndented("Dependency \"" .. assemblyId .. "\" was not found")

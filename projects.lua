@@ -443,7 +443,8 @@ local function getConfigFilter(config)
     local configFilters = { 
         [rythe.configuration.RELEASE] = "configurations:Release*",
         [rythe.configuration.DEVELOPMENT] = "configurations:Development*",
-        [rythe.configuration.DEBUG] = "configurations:Debug*"
+        [rythe.configuration.DEBUG] = {"configurations:Debug*", "configurations:not Debug-no-inline*"},
+        [rythe.configuration.DEBUG_NO_INLINE] = "configurations:Debug-no-inline*"
     }
 
     return configFilters[config]
@@ -467,19 +468,43 @@ local function setupDebug()
     filter(getConfigFilter(rythe.configuration.DEBUG))
         defines { "DEBUG" }
         optimize("Debug")
+        inlining("Default")
+        symbols("On")
+end
+
+local function setupDebugNoInline()
+    filter(getConfigFilter(rythe.configuration.DEBUG_NO_INLINE))
+        defines { "DEBUG" }
+        optimize("Debug")
         inlining("Disabled")
         symbols("On")
 end
 
-local function setupDefault(config, linkTargets)
+local function sanitizeDebugArgs(config, variant, proj, projectType)
+    local objPath = os.realpath(rythe.workspace.location .. "/bin/obj/" .. rythe.configName(config) .. rythe.targetVariantSuffix(variant) .. "/" .. proj.name .. projectNameSuffix(projectType) )
+    local pchBinPath = objPath .. fs.getPathSeperator() .. proj.name .. projectNameSuffix(projectType) .. rythe.targetSuffix(config) .. ".pch"
+
+    local debugArgs = {}
+    for i, arg in ipairs(proj.debug_args) do
+        local result = string.gsub(arg, "%$pch_bin%$", pchBinPath)
+        debugArgs[#debugArgs + 1] = string.gsub(result, "%$obj_path%$", objPath)
+    end
+
+    return debugArgs
+end
+
+local function setupDefault(config, proj, projectType, linkTargets)
     filter { "configurations:not *-asan", "configurations:not *-profiling", getConfigFilter(config) }
         defines { "RYTHE_VALIDATION_LEVEL=" .. rythe.configurationValidationLevels[config][rythe.configurationVariants.DEFAULT]  }
         links(appendTargetSuffixes(linkTargets, config, rythe.configurationVariants.DEFAULT))
         targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.DEFAULT) .. rythe.targetSuffix(config))
         toolset(buildSettings.toolsets[config][rythe.configurationVariants.DEFAULT])
+        if proj.debug_args ~= nil then
+            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.DEFAULT, proj, projectType))
+        end
 end
 
-local function setupAsan(config, linkTargets)
+local function setupAsan(config, proj, projectType, linkTargets)
     filter("configurations:*-asan")
         sanitize("Address")
         flags("NoIncrementalLink")
@@ -491,9 +516,12 @@ local function setupAsan(config, linkTargets)
         links(appendTargetSuffixes(linkTargets, config, rythe.configurationVariants.ASAN))
         targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.ASAN) .. rythe.targetSuffix(config))
         toolset(buildSettings.toolsets[config][rythe.configurationVariants.ASAN])
+        if proj.debug_args ~= nil then
+            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.DEFAULT, proj, projectType))
+        end
 end
 
-local function setupProfiling(config, linkTargets)
+local function setupProfiling(config, proj, projectType, linkTargets)
     filter("configurations:*-profiling")
         defines {"RYTHE_PROFILING_ENABLED"}
         
@@ -502,6 +530,9 @@ local function setupProfiling(config, linkTargets)
         links(appendTargetSuffixes(linkTargets, config, rythe.configurationVariants.PROFILING))
         targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.PROFILING) .. rythe.targetSuffix(config))
         toolset(buildSettings.toolsets[config][rythe.configurationVariants.PROFILING])
+        if proj.debug_args ~= nil then
+            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.DEFAULT, proj, projectType))
+        end
 end
 
 local function getDepsRecursive(project, projectType)
@@ -642,7 +673,8 @@ function projects.submit(proj)
     local configSetup = { 
         [rythe.configuration.RELEASE] = setupRelease,
         [rythe.configuration.DEVELOPMENT] = setupDevelopment,
-        [rythe.configuration.DEBUG] = setupDebug        
+        [rythe.configuration.DEBUG] = setupDebug,
+        [rythe.configuration.DEBUG_NO_INLINE] = setupDebugNoInline           
     }
 
     local variantSetup = {
@@ -653,7 +685,7 @@ function projects.submit(proj)
 
     for i, projectType in ipairs(proj.types) do
         local fullGroupPath = projectTypeGroupPrefix(projectType) .. proj.group
-        local binDir = "build/" .. _ACTION .. "/bin/"
+        local binDir = rythe.workspace.location .. "/bin/"
         utils.printIndented("Submitting " .. proj.name .. ":\t" .. projectType)
 
         utils.pushIndent()
@@ -804,10 +836,6 @@ function projects.submit(proj)
                     isaextensions(proj.isa_extensions)
                 end
 
-                if proj.debug_args ~= nil then
-                    debugargs(proj.debug_args)
-                end
-
                 intrinsics("On")
                 characterset("Unicode")
                 filter { "toolset:msc" }
@@ -875,7 +903,7 @@ function projects.submit(proj)
                     end
 
                     io.writefile(pchHeader, pchContent)
-                    utils.printIndented("Created: " .. pchHeader)
+                    utils.printIndented("Generated: " .. pchHeader)
                 else
                     if not os.isfile(pchHeader) then
                         io.writefile(pchHeader, "#pragma once\n#define RYTHE_PCH\n\n")
@@ -919,7 +947,7 @@ function projects.submit(proj)
                 for i, config in pairs(rythe.configuration) do
                     configSetup[config]()
                     for j, variant in pairs(rythe.configurationVariants) do
-                        variantSetup[variant](config, linkTargets)
+                        variantSetup[variant](config, proj, projectType, linkTargets)
                     end
                 end
             end

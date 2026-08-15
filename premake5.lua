@@ -60,6 +60,14 @@ if(_ACTION ~= nil) then
 
     r.projects.clearAll()
 
+    local workspace = {
+        name = _OPTIONS["workspace-name"],
+        location = _OPTIONS["workspace-location"] or ("build/" .. _ACTION),
+        configurations = { "Debug", "Debug-no-inline", "Development", "Release", "Debug-asan", "Release-profiling" }
+    }
+
+    r.setupWorkspace(workspace)
+
     r.projects.addBuiltInProjects()
 
     if(_OPTIONS["single-project"] ~= nil) then
@@ -70,13 +78,6 @@ if(_ACTION ~= nil) then
 
     r.projects.resolveAllDeps()
 
-    local workspace = {
-        name = _OPTIONS["workspace-name"],
-        location = _OPTIONS["workspace-location"] or ("build/" .. _ACTION),
-        configurations = { "Debug", "Debug-no-inline", "Development", "Release", "Debug-asan", "Release-profiling" }
-    }
-
-    r.setupWorkspace(workspace)
         r.utils.pushIndent()
         r.projects.submitAll()
         r.utils.popIndent()

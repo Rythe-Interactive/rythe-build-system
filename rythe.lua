@@ -4,7 +4,8 @@ premake.rythe = {
     configuration = {
         RELEASE = 1,
         DEVELOPMENT = 2,
-        DEBUG = 3
+        DEBUG = 3,
+        DEBUG_NO_INLINE = 4
     },
     configurationVariants = {
         DEFAULT = 1,
@@ -16,19 +17,22 @@ premake.rythe = {
         architecture = "x86_64",
         cppVersion = "C++23"
     },
-    utils = dofile("utils.lua")
+    utils = dofile("utils.lua"),
+    workspace = nil
 }
 
 premake.rythe.configNames = { 
     [premake.rythe.configuration.RELEASE] = "Release",
     [premake.rythe.configuration.DEVELOPMENT] = "Development",
     [premake.rythe.configuration.DEBUG] = "Debug",
+    [premake.rythe.configuration.DEBUG_NO_INLINE] = "Debug-no-inline",
 }
 
 premake.rythe.configSuffix = { 
     [premake.rythe.configuration.RELEASE] = "",
     [premake.rythe.configuration.DEVELOPMENT] = "-dev",
-    [premake.rythe.configuration.DEBUG] = "-debug"        
+    [premake.rythe.configuration.DEBUG] = "-debug",   
+    [premake.rythe.configuration.DEBUG_NO_INLINE] = "-debug",   
 }
 
 premake.rythe.variantSuffix = { 
@@ -40,13 +44,15 @@ premake.rythe.variantSuffix = {
 premake.rythe.buildSettings.toolsets = {
     [premake.rythe.configuration.RELEASE] = { [premake.rythe.configurationVariants.DEFAULT] = "clang", [premake.rythe.configurationVariants.ASAN] = "msc", [premake.rythe.configurationVariants.PROFILING] = "clang" },
     [premake.rythe.configuration.DEVELOPMENT] = { [premake.rythe.configurationVariants.DEFAULT] = "clang", [premake.rythe.configurationVariants.ASAN] = "msc", [premake.rythe.configurationVariants.PROFILING] = "clang" },
-    [premake.rythe.configuration.DEBUG] =  { [premake.rythe.configurationVariants.DEFAULT] = "clang", [premake.rythe.configurationVariants.ASAN] = "msc", [premake.rythe.configurationVariants.PROFILING] = "clang" }
+    [premake.rythe.configuration.DEBUG] =  { [premake.rythe.configurationVariants.DEFAULT] = "clang", [premake.rythe.configurationVariants.ASAN] = "msc", [premake.rythe.configurationVariants.PROFILING] = "clang" },
+    [premake.rythe.configuration.DEBUG_NO_INLINE] =  { [premake.rythe.configurationVariants.DEFAULT] = "clang", [premake.rythe.configurationVariants.ASAN] = "msc", [premake.rythe.configurationVariants.PROFILING] = "clang" }
 }
 
 premake.rythe.configurationValidationLevels = {
     [premake.rythe.configuration.RELEASE] = { [premake.rythe.configurationVariants.DEFAULT] = "0", [premake.rythe.configurationVariants.ASAN] = "0", [premake.rythe.configurationVariants.PROFILING] = "0" },
     [premake.rythe.configuration.DEVELOPMENT] = { [premake.rythe.configurationVariants.DEFAULT] = "2", [premake.rythe.configurationVariants.ASAN] = "2", [premake.rythe.configurationVariants.PROFILING] = "2" },
-    [premake.rythe.configuration.DEBUG] =  { [premake.rythe.configurationVariants.DEFAULT] = "3", [premake.rythe.configurationVariants.ASAN] = "3", [premake.rythe.configurationVariants.PROFILING] = "3" }
+    [premake.rythe.configuration.DEBUG] =  { [premake.rythe.configurationVariants.DEFAULT] = "3", [premake.rythe.configurationVariants.ASAN] = "3", [premake.rythe.configurationVariants.PROFILING] = "3" },
+    [premake.rythe.configuration.DEBUG_NO_INLINE] =  { [premake.rythe.configurationVariants.DEFAULT] = "3", [premake.rythe.configurationVariants.ASAN] = "3", [premake.rythe.configurationVariants.PROFILING] = "3" }
 }
 
 local rythe = premake.rythe
@@ -93,6 +99,7 @@ end
 
 function rythe.setupWorkspace(wspc)
     print("Setting up " .. wspc.name)
+    rythe.workspace = wspc
 
     workspace(wspc.name)
         location(wspc.location)

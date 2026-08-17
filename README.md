@@ -59,6 +59,9 @@ Projects are also the main way of interacting with the rythe build system.
 | link_time_optimization              | true                          | Enable LTO                                                                                                                           |
 | pch_enabled                         | false                         | Enable precompiled headers                                                                                                           |
 | pch_file_name                       | "pch"                         | File name for pch header and pch source files (e.g. pch.hpp and pch.cpp will have the name: "pch")                                   |
+| pch_auto_generate                   | false                         | Let build system generate pch                                                                                                        |
+| debug_args                          | nil                           | List of arguments to provide to the executable while debugging.                                                                      |
+| natvis                              | nil                           | Natvis file (will take a file named ".natvis" if it exists and no value is provided)                                                 |
 
 ## Project types
 

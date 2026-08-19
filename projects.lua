@@ -517,7 +517,7 @@ local function setupAsan(config, proj, projectType, linkTargets)
         targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.ASAN) .. rythe.targetSuffix(config))
         toolset(buildSettings.toolsets[config][rythe.configurationVariants.ASAN])
         if proj.debug_args ~= nil then
-            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.DEFAULT, proj, projectType))
+            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.ASAN, proj, projectType))
         end
 end
 
@@ -531,7 +531,7 @@ local function setupProfiling(config, proj, projectType, linkTargets)
         targetsuffix(rythe.targetVariantSuffix(rythe.configurationVariants.PROFILING) .. rythe.targetSuffix(config))
         toolset(buildSettings.toolsets[config][rythe.configurationVariants.PROFILING])
         if proj.debug_args ~= nil then
-            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.DEFAULT, proj, projectType))
+            debugargs(sanitizeDebugArgs(config, rythe.configurationVariants.PROFILING, proj, projectType))
         end
 end
 

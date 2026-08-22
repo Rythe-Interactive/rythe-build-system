@@ -834,6 +834,13 @@ function projects.submit(proj)
 
                 if proj.isa_extensions ~= nil then
                     isaextensions(proj.isa_extensions)
+                    filter { "system:windows", "toolset:clang" }
+                        local isaExtensionFlags = {}
+                        for i, extension in ipairs(proj.isa_extensions) do
+                            isaExtensionFlags[#isaExtensionFlags + 1] = "-m" .. string.lower(extension)
+                        end
+                        buildoptions(isaExtensionFlags)
+                    filter {}
                 end
 
                 intrinsics("On")
